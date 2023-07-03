@@ -14,17 +14,18 @@ import { useIntl } from 'react-intl';
 
 import styles from './OneParticipant.module.scss';
 
-export const OneParticipant = () => {
+type OneParticipantProps = {
+  isPresentationLayoutActive: boolean;
+}
+
+export const OneParticipant = ({isPresentationLayoutActive}: OneParticipantProps) => {
   const { status, isLocalUserPresentationOwner, isPresentationModeActive } = useScreenSharing();
   const { getColor, isMobileSmall, isLandscape, isMobile, isTablet, isDesktop } = useTheme();
   const { conference } = useConference();
   const intl = useIntl();
 
   const isTabletPortrait = useMemo(() => isTablet && !isLandscape, [isTablet, isLandscape]);
-
-  const isPresentationActive =
-    status === ShareStatus.Active || (isLocalUserPresentationOwner && isPresentationModeActive);
-
+  
   const getLeftContainerMargin = useMemo(() => {
     if (isDesktop) return 'm';
     if (isTablet && isLandscape) return 's';
@@ -35,11 +36,11 @@ export const OneParticipant = () => {
     return (
       <Space
         testID="OneParticipant"
-        ml={!isPresentationActive && getLeftContainerMargin}
-        mb={isPresentationActive && isDesktop && 'xs'}
+        ml={!isPresentationLayoutActive && getLeftContainerMargin}
+        mb={isPresentationLayoutActive && isDesktop && 'xs'}
         p={!isMobile && 'm'}
         fh
-        fw={isPresentationActive}
+        fw={isPresentationLayoutActive}
         className={cx(styles.wrapper, {
           [styles.columnAlignMobile]: (isMobile && !isLandscape) || isMobileSmall || isTabletPortrait,
           [styles.tabletAlignment]: isTabletPortrait,

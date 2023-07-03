@@ -101,6 +101,7 @@
   "requestDeclined": "Request declined",
   "returnToHome": "Return to home screen",
   "screenShareDefaultFallbackText": "An error is preventing screen sharing",
+  "gameboxFallbackText": "An error is preventing playing game",
   "screenSharing": "Screen sharing",
   "screenSharingBlockedDesc": "{browser} might not have screen-recording permissions on your computer. Go to System Preferences and update your settings.",
   "screenSharingIssue": "Screen sharing issue",

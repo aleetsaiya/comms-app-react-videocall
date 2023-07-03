@@ -10,6 +10,7 @@ import MobileTopBar from '@components/MobileTopBar';
 import OneParticipant from '@components/OneParticipant';
 import PendingTakeoverInfoBar from '@components/PendingTakeoverInfoBar';
 import ScreenSharingPermissionModal from '@components/ScreenSharingPermissionModal/ScreenSharingPermissionModal';
+import VoxeetSDK from '@voxeet/voxeet-web-sdk';
 import {
   Conference as ConferenceComponent,
   InfoBar,
@@ -42,7 +43,9 @@ import { Onboarding, OnboardingStep } from '@src/components/Onboarding/Onboardin
 import { SideDrawer } from '@src/components/SideDrawer';
 import Backdrop from '@src/components/SideDrawer/Backdrop';
 import Text from '@src/components/Text';
+import GameBox from '@src/components/GameBox';
 import { SideDrawerProvider } from '@src/context/SideDrawerContext';
+import { useGameMode } from '@src/context/GameModeContext';
 import useSDKErrorHandler from '@src/hooks/useSDKErrorsHandler';
 import { conferenceSteps } from '@src/onboarding/conference';
 import { Routes } from '@src/types/routes';
@@ -87,6 +90,7 @@ export const Conference = () => {
     stopScreenShare,
   } = useScreenSharing();
   const { status: recordingStatus, ownerId, isLocalUserRecordingOwner, stopRecording } = useRecording();
+  const { isGameModeActive } = useGameMode();
   const [isBottomDrawerOpen, setIsBottomDrawerOpen] = useState(false);
   const [showBars, setShowBars] = useState(true);
   const [showTwoMinutesRemaining, setShowTwoMinutesRemaining] = useState(false);
@@ -140,6 +144,20 @@ export const Conference = () => {
         return true;
     }
   };
+
+  useEffect(() => {
+    // register the handler for 'received' event
+    // @ts-ignore
+    const messageHandler = function(participant, message) {
+      const dataParsed = JSON.parse(message);
+      console.log("%%%%%% Command received, message: " + dataParsed.dataPayload)
+    }
+    VoxeetSDK.conference.on('received', messageHandler);
+    console.log('Start Listening message');
+    return () => {
+      VoxeetSDK.conference.removeListener('received', messageHandler);
+    };
+  }, [])
 
   useEffect(() => {
     const startTime = getMeetTimestamp(meetingName) ?? 0;
@@ -233,8 +251,10 @@ export const Conference = () => {
     return participants.length === 1;
   }, [participants]);
 
-  const isPresentationActive =
+  const isPresentationActive = 
     status === ShareStatus.Active || (isLocalUserPresentationOwner && isPresentationModeActive);
+
+  const isPresentationLayout = isGameModeActive || isPresentationActive;
 
   return (
     <SideDrawerProvider>
@@ -270,6 +290,7 @@ export const Conference = () => {
               className={cx(styles.contentWrapper, {
                 [styles.mobile]: isMobileSmall && !isOneParticipant,
                 [styles.isPresentationActive]: isPresentationActive,
+                [styles.isGameModeActive]: isGameModeActive,
                 [styles.landscape]: isLandscape,
               })}
               style={{
@@ -284,19 +305,20 @@ export const Conference = () => {
               }}
             >
               {isDesktop && <ActionBar ref={actionBarRef} />}
+              {/* Note: Presentation Section Start */}
               <Space
                 className={cx(styles.presentationGridWrapper)}
                 style={{
                   height:
-                    isPresentationActive && isDesktop ? `calc(100% - ${dockRef.current?.clientHeight}px)` : '100%',
+                    isPresentationLayout && isDesktop ? `calc(100% - ${dockRef.current?.clientHeight}px)` : '100%',
                 }}
                 ph={isSmartphone ? 'xs' : 'm'}
                 pt={
-                  isDesktop && isPresentationActive
+                  isDesktop && isPresentationLayout
                     ? 's'
                     : isDesktop
                     ? 'm'
-                    : isMobileSmall && !isPresentationActive && 'xs'
+                    : isMobileSmall && !isPresentationLayout && 'xs'
                 }
                 pb={isSmartphone && 'xs'}
               >
@@ -308,7 +330,7 @@ export const Conference = () => {
                       fallbackButtonText={intl.formatMessage({ id: 'tryAgain' })}
                       style={{
                         height:
-                          (isTablet || isSmartphone) && isPresentationActive
+                          (isTablet || isSmartphone) && isPresentationLayout
                             ? `calc(100% - ${mobileScreenShareRef.current?.clientHeight}px)`
                             : isDesktop
                             ? '100%'
@@ -317,13 +339,28 @@ export const Conference = () => {
                     />
                   </Space>
                 )}
+                {isGameModeActive && (
+                  <Space className={styles.gameModeWrapper} pb={isDesktop && !isLandscape && 'xs'}>
+                    <GameBox
+                      fallbackText={intl.formatMessage({ id: 'gameboxFallbackText' })}
+                      style={{
+                        height:
+                        (isTablet || isSmartphone) && isPresentationLayout
+                          ? `calc(100% - ${mobileScreenShareRef.current?.clientHeight}px)`
+                          : isDesktop
+                          ? '100%'
+                          : undefined,
+                      }}
+                    />
+                  </Space>
+                )} 
                 <Space
                   className={cx(styles.gridWrapper, {
                     [styles.oneParticipant]: isOneParticipant,
                     [styles.mobileColumnOneParticipant]:
                       isOneParticipant && ((isSmartphone && !isLandscape) || (!isLandscape && isTablet)),
                   })}
-                  pl={isDesktop && isPresentationActive ? 'm' : isTablet && isLandscape && isPresentationActive && 'xs'}
+                  pl={isDesktop && isPresentationLayout ? 'm' : isTablet && isLandscape && isPresentationLayout && 'xs'}
                 >
                   <ParticipantsGrid
                     localText={intl.formatMessage({ id: 'you' })}
@@ -337,9 +374,10 @@ export const Conference = () => {
                         : undefined
                     }
                   />
-                  {isOneParticipant && <OneParticipant />}
+                  {isOneParticipant && <OneParticipant isPresentationLayoutActive={isPresentationLayout}/>}
                 </Space>
               </Space>
+              {/* Note: Presentation Section End */}
             </Space>
             <div className="dockRef" ref={dockRef}>
               {isDesktop ? <Dock /> : <MobileDock openBottomDrawer={openBottomDrawer} visible={showBars} />}

@@ -7,6 +7,7 @@ import RefreshPage from '@src/routes/ExpiredToken';
 import { Routes as RoutesType } from '@src/types/routes';
 import React, { useMemo } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
+import { GameModeProvider } from '@src/context/GameModeContext';
 
 const Router = () => {
   const { conference } = useConference();
@@ -17,7 +18,7 @@ const Router = () => {
     return <Navigate replace to={`${RoutesType.ConferenceCreate}${window.location.search}`} />;
   }, [window.location.search]);
 
-  const isConference = conference ? <Conference /> : redirect;
+  const isConference = conference ? <GameModeProvider><Conference /></GameModeProvider> : redirect;
   const hasLeft = meetingName.length > 0 ? <ConferenceLeft /> : redirect;
 
   return (

@@ -5,6 +5,7 @@ import MusicModeModal from '@components/MusicModeModal';
 import RecordingModal from '@components/RecordingModal';
 import StopLiveStreamingModal from '@components/StopLiveStreamingModal';
 import ToggleSettingsDrawerButton from '@components/ToggleSettingsDrawerButton';
+import GameButton from '@components/GameButton';
 import {
   IconButton,
   LiveStreamButton,
@@ -119,6 +120,8 @@ export const Dock = () => {
           onLackOfBrowserPermissions={handleLackOfBrowserPermissions}
           onError={() => showErrorNotification(intl.formatMessage({ id: 'screenSharingLimit' }))}
         />
+        <Space className={styles.spacer} />
+        <GameButton />
         {env('VITE_CONFERENCE_RECORDING') === 'true' && (
           <>
             <Space className={styles.spacer} />
